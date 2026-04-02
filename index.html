@@ -1,289 +1,315 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { Wallet, Calendar, TrendingUp, PiggyBank, PieChart, Info } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>노후 자산 설계 계산기</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .card { background: white; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        input[type="range"] { accent-color: #4f46e5; }
+        /* Custom scrollbar for table */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen text-gray-900">
 
-const App = () => {
-  // State for inputs
-  const [monthlyDeposit, setMonthlyDeposit] = useState(1000000); // Default 1M KRW
-  const [years, setYears] = useState(20); // Default 20 years
-  const [annualRate, setAnnualRate] = useState(5); // Default 5%
-
-  // Calculation logic
-  const simulationData = useMemo(() => {
-    const data = [];
-    const monthlyRate = annualRate / 100 / 12;
-    const totalMonths = years * 12;
-    
-    let currentBalance = 0;
-    let totalPrincipal = 0;
-
-    for (let month = 0; month <= totalMonths; month++) {
-      if (month > 0) {
-        currentBalance = (currentBalance + monthlyDeposit) * (1 + monthlyRate);
-        totalPrincipal += monthlyDeposit;
-      }
-
-      // Record data every year or at the end
-      if (month % 12 === 0 || month === totalMonths) {
-        data.push({
-          year: month / 12,
-          total: Math.round(currentBalance),
-          principal: totalPrincipal,
-          interest: Math.round(currentBalance - totalPrincipal),
-        });
-      }
-    }
-    return data;
-  }, [monthlyDeposit, years, annualRate]);
-
-  const finalAsset = simulationData[simulationData.length - 1];
-
-  const formatCurrency = (value) => {
-    if (value >= 100000000) {
-      const eok = Math.floor(value / 100000000);
-      const man = Math.round((value % 100000000) / 10000);
-      return `${eok}억 ${man > 0 ? man + '만' : ''}원`;
-    }
-    return `${(value / 10000).toLocaleString()}만원`;
-  };
-
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white p-4 shadow-lg border border-gray-100 rounded-lg">
-          <p className="font-bold text-gray-700 mb-1">{label}년차</p>
-          <p className="text-blue-600 text-sm">총 자산: {formatCurrency(payload[0].value)}</p>
-          <p className="text-gray-500 text-xs">원금: {formatCurrency(payload[0].payload.principal)}</p>
-          <p className="text-orange-500 text-xs">수익: {formatCurrency(payload[0].payload.interest)}</p>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <header className="mb-8 text-center md:text-left">
-          <h1 className="text-3xl font-extrabold text-slate-800 flex items-center justify-center md:justify-start gap-2">
-            <TrendingUp className="text-blue-600" />
-            노후 자산 시뮬레이터
-          </h1>
-          <p className="text-slate-500 mt-2">복리 효과를 확인하고 은퇴 계획을 세워보세요.</p>
+    <div class="max-w-6xl mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="text-center mb-10">
+            <h1 class="text-3xl font-bold text-indigo-700">노후 자산 설계 계산기</h1>
+            <p class="text-gray-500 mt-2">월 복리 계산을 통해 당신의 미래 자산을 예측해 보세요.</p>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Controls Section */}
-          <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-              <h2 className="text-lg font-bold text-slate-700 mb-6 flex items-center gap-2">
-                <PiggyBank className="w-5 h-5 text-blue-500" />
-                조건 설정
-              </h2>
-              
-              {/* Monthly Deposit */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-slate-600 mb-2">
-                  월 납입액
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={monthlyDeposit}
-                    onChange={(e) => setMonthlyDeposit(Number(e.target.value))}
-                    className="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">원</span>
-                </div>
-                <input
-                  type="range"
-                  min="100000"
-                  max="10000000"
-                  step="100000"
-                  value={monthlyDeposit}
-                  onChange={(e) => setMonthlyDeposit(Number(e.target.value))}
-                  className="w-full mt-4 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                />
-                <p className="text-right text-xs text-slate-400 mt-1">{formatCurrency(monthlyDeposit)}</p>
-              </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Inputs Section -->
+            <div class="lg:col-span-1 space-y-6">
+                <div class="card p-6">
+                    <h2 class="text-xl font-semibold mb-6 flex items-center">
+                        <span class="bg-indigo-100 text-indigo-700 p-2 rounded-lg mr-2">⚙️</span>
+                        설정값 입력
+                    </h2>
 
-              {/* Period */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-slate-600 mb-2">
-                  납입 기간
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={years}
-                    onChange={(e) => setYears(Number(e.target.value))}
-                    className="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">년</span>
-                </div>
-                <input
-                  type="range"
-                  min="1"
-                  max="50"
-                  value={years}
-                  onChange={(e) => setYears(Number(e.target.value))}
-                  className="w-full mt-4 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                />
-              </div>
+                    <!-- Initial Capital -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">초기 자본 (원)</label>
+                        <input type="number" id="initialCapital" value="10000000" step="1000000"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                    </div>
 
-              {/* Interest Rate */}
-              <div className="mb-2">
-                <label className="block text-sm font-medium text-slate-600 mb-2">
-                  연평균 수익률 (%)
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={annualRate}
-                    onChange={(e) => setAnnualRate(Number(e.target.value))}
-                    className="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">%</span>
+                    <!-- Monthly Deposit -->
+                    <div class="mb-6">
+                        <div class="flex justify-between mb-2">
+                            <label class="text-sm font-medium text-gray-700">월 납입액 (원)</label>
+                            <span id="monthlyDepositValue" class="text-indigo-600 font-bold">1,000,000원</span>
+                        </div>
+                        <input type="range" id="monthlyDeposit" min="0" max="10000000" step="100000" value="1000000" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
+
+                    <!-- Duration -->
+                    <div class="mb-6">
+                        <div class="flex justify-between mb-2">
+                            <label class="text-sm font-medium text-gray-700">납입 기간 (년)</label>
+                            <span id="yearsValue" class="text-indigo-600 font-bold">20년</span>
+                        </div>
+                        <input type="range" id="years" min="1" max="50" step="1" value="20" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
+
+                    <!-- Interest Rate -->
+                    <div class="mb-6">
+                        <div class="flex justify-between mb-2">
+                            <label class="text-sm font-medium text-gray-700">연 수익률 (%)</label>
+                            <span id="interestRateValue" class="text-indigo-600 font-bold">5%</span>
+                        </div>
+                        <input type="range" id="interestRate" min="0.1" max="20" step="0.1" value="5" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
                 </div>
-                <input
-                  type="range"
-                  min="0.1"
-                  max="20"
-                  step="0.1"
-                  value={annualRate}
-                  onChange={(e) => setAnnualRate(Number(e.target.value))}
-                  className="w-full mt-4 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                />
-              </div>
+
+                <!-- Summary Info -->
+                <div class="card p-6 bg-indigo-700 text-white transition-all duration-300 transform hover:scale-[1.02]">
+                    <h3 class="text-lg font-medium opacity-80">예상 총 자산</h3>
+                    <div class="text-3xl font-bold mt-2" id="totalAssets">0원</div>
+                    <div class="mt-4 pt-4 border-t border-indigo-500 text-sm">
+                        <div class="flex justify-between mb-1">
+                            <span>원금 합계:</span>
+                            <span id="totalPrincipal" class="font-semibold">0원</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>수익 합계:</span>
+                            <span id="totalInterest" class="font-semibold text-green-300">0원</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 flex gap-3">
-              <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-blue-700 leading-relaxed">
-                이 계산기는 월 복리(Monthly Compounding) 방식으로 계산됩니다. 세금 및 물가 상승률은 고려되지 않은 세전 추정치입니다.
-              </p>
-            </div>
-          </div>
-
-          {/* Results Section */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Wallet className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <span className="text-sm font-medium text-slate-500">최종 예상 자산</span>
+            <!-- Visualization Section -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Chart -->
+                <div class="card p-6 h-[400px]">
+                    <h2 class="text-xl font-semibold mb-4">자산 성장 그래프</h2>
+                    <div class="relative h-full w-full">
+                        <canvas id="growthChart"></canvas>
+                    </div>
                 </div>
-                <p className="text-2xl font-bold text-slate-800">{formatCurrency(finalAsset.total)}</p>
-              </div>
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 bg-orange-100 rounded-lg">
-                    <PieChart className="w-5 h-5 text-orange-600" />
-                  </div>
-                  <span className="text-sm font-medium text-slate-500">순수 이자 수익</span>
-                </div>
-                <p className="text-2xl font-bold text-slate-800">{formatCurrency(finalAsset.interest)}</p>
-              </div>
-            </div>
 
-            {/* Chart Section */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-              <div className="flex items-center justify-between mb-8">
-                <h3 className="text-lg font-bold text-slate-700">연도별 자산 성장 곡선</h3>
-                <div className="flex items-center gap-4 text-xs font-medium">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                    <span>총 자산</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 bg-slate-300 rounded-full"></div>
-                    <span>원금</span>
-                  </div>
+                <!-- Table Breakdown -->
+                <div class="card p-6 overflow-hidden">
+                    <h2 class="text-xl font-semibold mb-4">연도별 상세 내역</h2>
+                    <div class="overflow-x-auto max-h-[300px] overflow-y-auto custom-scrollbar">
+                        <table class="w-full text-left text-sm">
+                            <thead class="sticky top-0 bg-white border-b-2 border-gray-100 z-10">
+                                <tr>
+                                    <th class="py-3 px-4 font-semibold text-gray-600">연차</th>
+                                    <th class="py-3 px-4 font-semibold text-gray-600 text-right">누적 원금</th>
+                                    <th class="py-3 px-4 font-semibold text-gray-600 text-right">누적 자산</th>
+                                    <th class="py-3 px-4 font-semibold text-gray-600 text-right">수익금</th>
+                                </tr>
+                            </thead>
+                            <tbody id="breakdownTableBody" class="divide-y divide-gray-100">
+                                <!-- Table rows will be inserted here via JS -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-              </div>
-              
-              <div className="h-[350px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={simulationData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis 
-                      dataKey="year" 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{fill: '#94a3b8', fontSize: 12}}
-                      label={{ value: '경과년수', position: 'insideBottomRight', offset: -10, fontSize: 10, fill: '#94a3b8' }}
-                    />
-                    <YAxis 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{fill: '#94a3b8', fontSize: 12}}
-                      tickFormatter={(value) => `${(value / 100000000).toFixed(1)}억`}
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Area 
-                      type="monotone" 
-                      dataKey="principal" 
-                      stroke="#cbd5e1" 
-                      fill="#f1f5f9" 
-                      strokeWidth={2}
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="total" 
-                      stroke="#3b82f6" 
-                      fillOpacity={1} 
-                      fill="url(#colorTotal)" 
-                      strokeWidth={3}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
             </div>
-
-            {/* Breakdown Table */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-              <h3 className="text-lg font-bold text-slate-700 mb-4">주요 구간별 요약</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-slate-50 text-slate-500 font-medium">
-                    <tr>
-                      <th className="px-4 py-3 rounded-l-lg">기간</th>
-                      <th className="px-4 py-3">누적 원금</th>
-                      <th className="px-4 py-3">누적 이자</th>
-                      <th className="px-4 py-3 rounded-r-lg text-right">합계</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {[5, 10, 20, 30, 40, 50].filter(y => y <= years).map((year) => {
-                      const row = simulationData.find(d => d.year === year) || finalAsset;
-                      return (
-                        <tr key={year} className="hover:bg-slate-50 transition-colors">
-                          <td className="px-4 py-4 font-semibold text-slate-700">{year}년차</td>
-                          <td className="px-4 py-4 text-slate-600">{formatCurrency(row.principal)}</td>
-                          <td className="px-4 py-4 text-orange-500">+{formatCurrency(row.interest)}</td>
-                          <td className="px-4 py-4 text-right font-bold text-blue-600">{formatCurrency(row.total)}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
         </div>
-      </div>
     </div>
-  );
-};
 
-export default App;
+    <script>
+        // DOM Elements
+        const initialCapitalInput = document.getElementById('initialCapital');
+        const monthlyDepositInput = document.getElementById('monthlyDeposit');
+        const yearsInput = document.getElementById('years');
+        const interestRateInput = document.getElementById('interestRate');
+
+        const totalAssetsEl = document.getElementById('totalAssets');
+        const totalPrincipalEl = document.getElementById('totalPrincipal');
+        const totalInterestEl = document.getElementById('totalInterest');
+        const breakdownTableBody = document.getElementById('breakdownTableBody');
+
+        let chart;
+
+        /**
+         * Formats large numbers into Korean currency units (억/만원)
+         */
+        function formatCurrency(value) {
+            if (value >= 100000000) {
+                const eok = Math.floor(value / 100000000);
+                const man = Math.floor((value % 100000000) / 10000);
+                return `${eok.toLocaleString()}억 ${man > 0 ? man.toLocaleString() + '만' : ''}원`;
+            }
+            return `${Math.floor(value / 10000).toLocaleString()}만원`;
+        }
+
+        /**
+         * Formats numbers into standard Korean won with comma
+         */
+        function formatFullCurrency(value) {
+            return new Intl.NumberFormat('ko-KR').format(Math.floor(value)) + '원';
+        }
+
+        /**
+         * Main calculation logic for compound interest
+         */
+        function calculate() {
+            const P = parseFloat(initialCapitalInput.value) || 0;
+            const PMT = parseFloat(monthlyDepositInput.value);
+            const r = parseFloat(interestRateInput.value) / 100 / 12; // Monthly interest rate
+            const n = parseInt(yearsInput.value) * 12; // Total months
+
+            // Update Input Labels
+            document.getElementById('monthlyDepositValue').textContent = formatFullCurrency(PMT);
+            document.getElementById('yearsValue').textContent = yearsInput.value + '년';
+            document.getElementById('interestRateValue').textContent = interestRateInput.value + '%';
+
+            let yearlyData = [];
+            let currentBalance = P;
+            let currentPrincipal = P;
+
+            const chartLabels = ['현재'];
+            const chartDataAssets = [P];
+            const chartDataPrincipal = [P];
+
+            for (let month = 1; month <= n; month++) {
+                // Calculation: Monthly deposit added at the beginning, interest calculated at the end
+                currentBalance = (currentBalance + PMT) * (1 + r);
+                currentPrincipal += PMT;
+
+                if (month % 12 === 0) {
+                    const year = month / 12;
+                    yearlyData.push({
+                        year,
+                        principal: currentPrincipal,
+                        total: currentBalance,
+                        interest: currentBalance - currentPrincipal
+                    });
+                    chartLabels.push(year + '년');
+                    chartDataAssets.push(currentBalance);
+                    chartDataPrincipal.push(currentPrincipal);
+                }
+            }
+
+            // Update Summary UI
+            totalAssetsEl.textContent = formatCurrency(currentBalance);
+            totalPrincipalEl.textContent = formatCurrency(currentPrincipal);
+            totalInterestEl.textContent = formatCurrency(currentBalance - currentPrincipal);
+
+            // Update Visualization
+            renderTable(yearlyData);
+            updateChart(chartLabels, chartDataAssets, chartDataPrincipal);
+        }
+
+        /**
+         * Renders the breakdown table rows
+         */
+        function renderTable(data) {
+            breakdownTableBody.innerHTML = '';
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                row.className = "hover:bg-gray-50 transition-colors";
+                row.innerHTML = `
+                    <td class="py-3 px-4 text-gray-600">${item.year}년차</td>
+                    <td class="py-3 px-4 text-right font-medium text-gray-500">${formatFullCurrency(item.principal)}</td>
+                    <td class="py-3 px-4 text-right font-bold text-indigo-600">${formatFullCurrency(item.total)}</td>
+                    <td class="py-3 px-4 text-right font-medium text-green-600">+${formatFullCurrency(item.interest)}</td>
+                `;
+                breakdownTableBody.appendChild(row);
+            });
+        }
+
+        /**
+         * Initializes the Chart.js instance
+         */
+        function initChart() {
+            const ctx = document.getElementById('growthChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: '누적 자산',
+                            borderColor: '#4f46e5',
+                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                            fill: true,
+                            data: [],
+                            tension: 0.3,
+                            pointRadius: 2,
+                            pointHoverRadius: 5
+                        },
+                        {
+                            label: '누적 원금',
+                            borderColor: '#9ca3af',
+                            borderDash: [5, 5],
+                            data: [],
+                            tension: 0.1,
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            padding: 12,
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            titleColor: '#1f2937',
+                            bodyColor: '#4b5563',
+                            borderColor: '#e5e7eb',
+                            borderWidth: 1,
+                            callbacks: {
+                                label: (context) => ` ${context.dataset.label}: ${formatFullCurrency(context.raw)}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false }
+                        },
+                        y: {
+                            ticks: {
+                                callback: (value) => formatCurrency(value)
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Updates existing chart data
+         */
+        function updateChart(labels, assets, principal) {
+            chart.data.labels = labels;
+            chart.data.datasets[0].data = assets;
+            chart.data.datasets[1].data = principal;
+            chart.update();
+        }
+
+        // Add event listeners for all input fields
+        [initialCapitalInput, monthlyDepositInput, yearsInput, interestRateInput].forEach(input => {
+            input.addEventListener('input', calculate);
+        });
+
+        // Initialize on page load
+        window.onload = () => {
+            initChart();
+            calculate();
+        };
+    </script>
+</body>
+</html>
